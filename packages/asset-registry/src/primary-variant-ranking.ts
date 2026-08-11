@@ -212,7 +212,12 @@ function comparePrimaryVariantCandidates(params: {
     if (volumeDelta !== 0) return { isBetter: volumeDelta > 0, reason: 'volume24h' };
 
     const rankDelta = getMintRank(params.mintRank, params.next.mint) - getMintRank(params.mintRank, params.best.mint);
-    if (rankDelta !== 0) return { isBetter: rankDelta < 0, reason: 'curated_rank' };
+    // rankDelta is NaN when neither mint is curated (Infinity - Infinity). Skip
+    // the curated-rank decision then so we fall through to the lexical tie-break
+    // instead of mislabeling the result 'curated_rank' and ignoring array order.
+    if (!Number.isNaN(rankDelta) && rankDelta !== 0) {
+        return { isBetter: rankDelta < 0, reason: 'curated_rank' };
+    }
 
     if (params.lexicalTieBreak) {
         return {

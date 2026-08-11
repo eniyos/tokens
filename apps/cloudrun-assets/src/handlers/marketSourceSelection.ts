@@ -217,7 +217,11 @@ function isUsableClickhouseSnapshot(snapshot: ProviderMarketMetrics | null): boo
     const asOf = finiteNumber(snapshot.asOf);
     const lastFetchedAt = finiteNumber(snapshot.lastFetchedAt);
     if (asOf === undefined || lastFetchedAt === undefined) return true;
-    return lastFetchedAt - asOf <= MAX_CLICKHOUSE_AS_OF_AGE_MS;
+    // snapshots.asOf is stored in epoch-seconds (see crons.clickhouse.ts), while
+    // lastFetchedAt is epoch-ms (deps.now()). Convert asOf to ms before comparing
+    // so a just-fetched snapshot is never mistaken for stale (previously the ms-
+    // seconds difference (~1.75e12) always exceeded the 600s budget).
+    return lastFetchedAt - asOf * 1000 <= MAX_CLICKHOUSE_AS_OF_AGE_MS;
 }
 
 function demoteStaleSnapshots(snapshots: Array<ProviderMarketMetrics | null>): Array<ProviderMarketMetrics | null> {
