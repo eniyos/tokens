@@ -269,6 +269,20 @@ describe('pickPrimaryVariantWithRanking', () => {
         expect(result.variant?.mint).toBe(MINT_C < MINT_B ? MINT_C : MINT_B);
     });
 
+    it('lexical tie-break wins over array order when both variants are uncurated', () => {
+        // MINT_B is first in the array but lexically LARGER than MINT_C, so the
+        // correct lexical answer (MINT_C) differs from the buggy "first candidate"
+        // result that an unreachable lexical branch would keep.
+        const result = pickPrimaryVariantWithRanking({
+            asset: asset([variant(MINT_B, 'tesla:b'), variant(MINT_C, 'tesla:c')]),
+            mintRank: new Map(),
+            marketByMint: new Map(),
+            options: { nowSeconds: NOW, lexicalTieBreak: true },
+        });
+
+        expect(result.variant?.mint).toBe(MINT_C);
+    });
+
     it('stock-redeemability strategy picks a share-redeemable variant within the liquidity cap', () => {
         const selected = pick({
             strategy: 'stock_redeemability',
